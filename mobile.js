@@ -4,86 +4,78 @@ class Paper {
   holdingPaper = false;
   touchStartX = 0;
   touchStartY = 0;
-  prevTouchX = 0;
-  prevTouchY = 0;
-  velX = 0;
-  velY = 0;
-  rotation = Math.random() * 30 - 15;
   currentPaperX = 0;
   currentPaperY = 0;
-  rotating = false;
+  rotation = Math.random() * 30 - 15;
 
   init(paper) {
-    // Disable all scrolling while dragging
-    const disableScroll = (e) => {
-      if (this.holdingPaper) {
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
+    // Touch Start Handler (Start Dragging)
+    const touchStartHandler = (e) => {
+      if (this.holdingPaper) return;
+
+      // Prevent default behavior (scrolling, refreshing, etc.)
+      e.preventDefault();
+
+      this.holdingPaper = true;
+
+      // Bring the paper to the front
+      paper.style.zIndex = highestZ;
+      highestZ += 1;
+
+      // Get the initial touch position
+      const touch = e.touches[0];
+      this.touchStartX = touch.clientX;
+      this.touchStartY = touch.clientY;
+
+      // Store the current paper position
+      const transform = paper.style.transform;
+      if (transform) {
+        const match = transform.match(/translateX\(([-\d.]+)px\) translateY\(([-\d.]+)px\)/);
+        if (match) {
+          this.currentPaperX = parseFloat(match[1]);
+          this.currentPaperY = parseFloat(match[2]);
+        }
       }
     };
 
     // Touch Move Handler (Dragging)
     const touchMoveHandler = (e) => {
       if (!this.holdingPaper) return;
+
+      // Prevent default behavior (scrolling, refreshing, etc.)
       e.preventDefault();
 
       const touch = e.touches[0];
 
-      if (!this.rotating) {
-        this.velX = touch.clientX - this.prevTouchX;
-        this.velY = touch.clientY - this.prevTouchY;
-      }
+      // Calculate the distance moved
+      const deltaX = touch.clientX - this.touchStartX;
+      const deltaY = touch.clientY - this.touchStartY;
 
-      if (this.holdingPaper) {
-        if (!this.rotating) {
-          this.currentPaperX += this.velX;
-          this.currentPaperY += this.velY;
-        }
-        this.prevTouchX = touch.clientX;
-        this.prevTouchY = touch.clientY;
+      // Update the paper's position
+      const newX = this.currentPaperX + deltaX;
+      const newY = this.currentPaperY + deltaY;
 
-        paper.style.transform = `translateX(${this.currentPaperX}px) translateY(${this.currentPaperY}px) rotateZ(${this.rotation}deg)`;
-      }
-    };
-
-    // Touch Start Handler (Start Dragging)
-    const touchStartHandler = (e) => {
-      if (this.holdingPaper) return;
-      this.holdingPaper = true;
-
-      // Fully disable scrolling
-      document.addEventListener("touchmove", disableScroll, { passive: false });
-      document.addEventListener("wheel", disableScroll, { passive: false });
-
-      paper.style.zIndex = highestZ;
-      highestZ += 1;
-
-      const touch = e.touches[0];
-      this.touchStartX = touch.clientX;
-      this.touchStartY = touch.clientY;
-      this.prevTouchX = touch.clientX;
-      this.prevTouchY = touch.clientY;
-
-      // Two-finger rotation check
-      if (e.touches.length === 2) {
-        this.rotating = true;
-      }
+      paper.style.transform = `translateX(${newX}px) translateY(${newY}px) rotateZ(${this.rotation}deg)`;
     };
 
     // Touch End Handler (Stop Dragging)
     const touchEndHandler = () => {
       this.holdingPaper = false;
-      this.rotating = false;
 
-      // Restore scrolling
-      document.removeEventListener("touchmove", disableScroll);
-      document.removeEventListener("wheel", disableScroll);
+      // Update the current paper position for the next drag
+      const transform = paper.style.transform;
+      if (transform) {
+        const match = transform.match(/translateX\(([-\d.]+)px\) translateY\(([-\d.]+)px\)/);
+        if (match) {
+          this.currentPaperX = parseFloat(match[1]);
+          this.currentPaperY = parseFloat(match[2]);
+        }
+      }
     };
 
     // Add event listeners
-    paper.addEventListener("touchmove", touchMoveHandler, { passive: false });
     paper.addEventListener("touchstart", touchStartHandler, { passive: false });
+    paper.addEventListener("touchmove", touchMoveHandler, { passive: false });
     paper.addEventListener("touchend", touchEndHandler);
   }
 }
