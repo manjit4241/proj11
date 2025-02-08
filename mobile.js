@@ -16,13 +16,16 @@ class Paper {
   rotating = false;
 
   init(paper) {
-    // Touch Move Handler
+    // Disable scrolling when dragging
+    const disableScroll = (e) => e.preventDefault();
+
+    // Touch Move Handler (Dragging)
     const touchMoveHandler = (e) => {
       if (!this.holdingPaper) return;
-      e.preventDefault(); // Prevent scrolling
-      
-      const touch = e.touches[0]; // Get first touch
-      
+      e.preventDefault(); // Stops page scrolling
+
+      const touch = e.touches[0];
+
       if (!this.rotating) {
         this.touchMoveX = touch.clientX;
         this.touchMoveY = touch.clientY;
@@ -55,30 +58,38 @@ class Paper {
       }
     };
 
-    // Touch Start Handler
+    // Touch Start Handler (Start Dragging)
     const touchStartHandler = (e) => {
       if (this.holdingPaper) return;
       this.holdingPaper = true;
-      
+
+      // Disable page scrolling
+      document.body.style.overflow = "hidden";
+      document.addEventListener("touchmove", disableScroll, { passive: false });
+
       paper.style.zIndex = highestZ;
       highestZ += 1;
 
-      const touch = e.touches[0]; // Get first touch
+      const touch = e.touches[0];
       this.touchStartX = touch.clientX;
       this.touchStartY = touch.clientY;
       this.prevTouchX = this.touchStartX;
       this.prevTouchY = this.touchStartY;
 
-      // Check for two fingers (rotation mode)
+      // Check for two-finger touch (Rotation)
       if (e.touches.length === 2) {
         this.rotating = true;
       }
     };
 
-    // Touch End Handler
+    // Touch End Handler (Stop Dragging)
     const touchEndHandler = () => {
       this.holdingPaper = false;
       this.rotating = false;
+
+      // Restore page scrolling
+      document.body.style.overflow = "";
+      document.removeEventListener("touchmove", disableScroll);
     };
 
     // Add event listeners
