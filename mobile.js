@@ -4,8 +4,6 @@ class Paper {
   holdingPaper = false;
   touchStartX = 0;
   touchStartY = 0;
-  touchMoveX = 0;
-  touchMoveY = 0;
   prevTouchX = 0;
   prevTouchY = 0;
   velX = 0;
@@ -16,34 +14,23 @@ class Paper {
   rotating = false;
 
   init(paper) {
-    // Disable scrolling when dragging
-    const disableScroll = (e) => e.preventDefault();
+    // Disable all scrolling while dragging
+    const disableScroll = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    };
 
     // Touch Move Handler (Dragging)
     const touchMoveHandler = (e) => {
       if (!this.holdingPaper) return;
-      e.preventDefault(); // Stops page scrolling
+      e.preventDefault();
 
       const touch = e.touches[0];
 
       if (!this.rotating) {
-        this.touchMoveX = touch.clientX;
-        this.touchMoveY = touch.clientY;
-        
-        this.velX = this.touchMoveX - this.prevTouchX;
-        this.velY = this.touchMoveY - this.prevTouchY;
-      }
-
-      const dirX = touch.clientX - this.touchStartX;
-      const dirY = touch.clientY - this.touchStartY;
-      const dirLength = Math.sqrt(dirX * dirX + dirY * dirY);
-      const dirNormalizedX = dirX / dirLength;
-      const dirNormalizedY = dirY / dirLength;
-
-      const angle = Math.atan2(dirNormalizedY, dirNormalizedX);
-      let degrees = (360 + Math.round((180 * angle) / Math.PI)) % 360;
-      if (this.rotating) {
-        this.rotation = degrees;
+        this.velX = touch.clientX - this.prevTouchX;
+        this.velY = touch.clientY - this.prevTouchY;
       }
 
       if (this.holdingPaper) {
@@ -51,8 +38,8 @@ class Paper {
           this.currentPaperX += this.velX;
           this.currentPaperY += this.velY;
         }
-        this.prevTouchX = this.touchMoveX;
-        this.prevTouchY = this.touchMoveY;
+        this.prevTouchX = touch.clientX;
+        this.prevTouchY = touch.clientY;
 
         paper.style.transform = `translateX(${this.currentPaperX}px) translateY(${this.currentPaperY}px) rotateZ(${this.rotation}deg)`;
       }
@@ -63,20 +50,18 @@ class Paper {
       if (this.holdingPaper) return;
       this.holdingPaper = true;
 
-      // Disable page scrolling
-      document.body.style.overflow = "hidden";
+      // Fully disable scrolling
       document.addEventListener("touchmove", disableScroll, { passive: false });
+      document.addEventListener("wheel", disableScroll, { passive: false });
 
       paper.style.zIndex = highestZ;
       highestZ += 1;
 
       const touch = e.touches[0];
-      this.touchStartX = touch.clientX;
-      this.touchStartY = touch.clientY;
-      this.prevTouchX = this.touchStartX;
-      this.prevTouchY = this.touchStartY;
+      this.prevTouchX = touch.clientX;
+      this.prevTouchY = touch.clientY;
 
-      // Check for two-finger touch (Rotation)
+      // Two-finger rotation check
       if (e.touches.length === 2) {
         this.rotating = true;
       }
@@ -87,9 +72,9 @@ class Paper {
       this.holdingPaper = false;
       this.rotating = false;
 
-      // Restore page scrolling
-      document.body.style.overflow = "";
+      // Restore scrolling
       document.removeEventListener("touchmove", disableScroll);
+      document.removeEventListener("wheel", disableScroll);
     };
 
     // Add event listeners
@@ -100,9 +85,6 @@ class Paper {
 }
 
 // Initialize all paper elements
-const papers = Array.from(document.querySelectorAll(".paper"));
-
-papers.forEach((paper) => {
-  const p = new Paper();
-  p.init(paper);
+document.querySelectorAll(".paper").forEach((paper) => {
+  new Paper().init(paper);
 });
